@@ -166,10 +166,10 @@ class ConvolutionalGLU(nn.Module):
         x = self.drop(x)
         return x
         
-class SPILayer(nn.Module):
+class PCLayer(nn.Module):
     
     def __init__(self, input_dim, output_dim, activation='gelu', use_p_bias=True):
-        super(SPILayer, self).__init__()
+        super(PCLayer, self).__init__()
         
         self.input_linear_o = nn.Linear(input_dim, output_dim)
 
@@ -186,13 +186,13 @@ class SPILayer(nn.Module):
         output = self.input_linear_o(x)+cs#+math.sqrt(2)*torch.sin(p+math.pi/4)
         return output
       
-class SPConvolutionalGLU(nn.Module):
+class PCConvGLU(nn.Module):
     def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU, drop=0.):
         super().__init__()
         out_features = out_features or in_features
         hidden_features = hidden_features or in_features
         hidden_features = int(2 * hidden_features / 3)
-        self.fc1 = SPILayer(in_features, hidden_features * 2)
+        self.fc1 = PCLayer(in_features, hidden_features * 2)
         
         self.dwconv = DWConv(hidden_features)
         self.act = act_layer()
@@ -314,7 +314,7 @@ class Block(nn.Module):
         mlp_hidden_dim = int(dim * mlp_ratio)
         
         
-        self.mlp = SPConvolutionalGLU(in_features=dim, hidden_features=mlp_hidden_dim, act_layer=act_layer, drop=drop) if glu_type=='sp' else ConvolutionalGLU(in_features=dim, hidden_features=mlp_hidden_dim, act_layer=act_layer, drop=drop)
+        self.mlp = PCConvGLU(in_features=dim, hidden_features=mlp_hidden_dim, act_layer=act_layer, drop=drop) if glu_type=='sp' else ConvolutionalGLU(in_features=dim, hidden_features=mlp_hidden_dim, act_layer=act_layer, drop=drop)
 
         # NOTE: drop path for stochastic depth, we shall see if this is better than dropout here
         self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
@@ -403,10 +403,10 @@ class MlpHead(nn.Module):
         x = self.fc2(x)
         return x
         
-class TransNeXt(nn.Module):
+class Pctrans(nn.Module):
     '''
     The parameter "img size" is primarily utilized for generating relative spatial coordinates,
-    which are used to compute continuous relative positional biases. As this TransNeXt implementation does not support multi-scale inputs,
+    which are used to compute continuous relative positional biases. As this Pctrans implementation does not support multi-scale inputs,
     it is recommended to set the "img size" parameter to a value that is exactly the same as the resolution of the inference images.
     It is not advisable to set the "img size" parameter to a value exceeding 800x800.
     The "pretrain size" refers to the "img size" used during the initial pre-training phase,
@@ -526,8 +526,8 @@ class TransNeXt(nn.Module):
 
 
 @register_model
-def transnext_z(pretrained=False, **kwargs):
-    model = TransNeXt(window_size=[3, 3, 3, None],
+def Pctrans_z(pretrained=False, **kwargs):
+    model = Pctrans(window_size=[3, 3, 3, None],
                       patch_size=4, embed_dims=[24, 48, 96, 192], num_heads=[2, 4, 6, 12],
                       mlp_ratios=[8, 8, 4, 4], qkv_bias=True,
                       norm_layer=partial(nn.LayerNorm, eps=1e-6), depths=[2, 2, 15, 2], sr_ratios=[8, 4, 2, 1],
@@ -537,8 +537,8 @@ def transnext_z(pretrained=False, **kwargs):
     return model
 
 @register_model
-def transnext_z_sp(pretrained=False, **kwargs):
-    model = TransNeXt(window_size=[3, 3, 3, None],
+def Pctrans_z_sp(pretrained=False, **kwargs):
+    model = Pctrans(window_size=[3, 3, 3, None],
                       patch_size=4, embed_dims=[24, 48, 96, 192], num_heads=[2, 4, 6, 12],
                       mlp_ratios=[8, 8, 4, 4], qkv_bias=True,
                       norm_layer=partial(nn.LayerNorm, eps=1e-6), depths=[2, 2, 15, 2], sr_ratios=[8, 4, 2, 1],glu_type='sp',
@@ -548,8 +548,8 @@ def transnext_z_sp(pretrained=False, **kwargs):
     return model
     
 @register_model
-def transnext_z_kan(pretrained=False, **kwargs):
-    model = TransNeXt(window_size=[3, 3, 3, None],
+def Pctrans_z_kan(pretrained=False, **kwargs):
+    model = Pctrans(window_size=[3, 3, 3, None],
                       patch_size=4, embed_dims=[24, 48, 96, 192], num_heads=[2, 4, 6, 12],
                       mlp_ratios=[8, 8, 4, 4], qkv_bias=True,
                       norm_layer=partial(nn.LayerNorm, eps=1e-6), depths=[2, 2, 15, 2], sr_ratios=[8, 4, 2, 1],head_type='kan',
@@ -559,8 +559,8 @@ def transnext_z_kan(pretrained=False, **kwargs):
     return model
 
 @register_model
-def transnext_z_kan_sp(pretrained=False, **kwargs):
-    model = TransNeXt(window_size=[3, 3, 3, None],
+def Pctrans_z_kan_sp(pretrained=False, **kwargs):
+    model = Pctrans(window_size=[3, 3, 3, None],
                       patch_size=4, embed_dims=[24, 48, 96, 192], num_heads=[2, 4, 6, 12],
                       mlp_ratios=[8, 8, 4, 4], qkv_bias=True,
                       norm_layer=partial(nn.LayerNorm, eps=1e-6), depths=[2, 2, 15, 2], sr_ratios=[8, 4, 2, 1],head_type='kan',glu_type='sp',
@@ -570,8 +570,8 @@ def transnext_z_kan_sp(pretrained=False, **kwargs):
     return model
     
 @register_model
-def transnext_z_fan(pretrained=False, **kwargs):
-    model = TransNeXt(window_size=[3, 3, 3, None],
+def Pctrans_z_fan(pretrained=False, **kwargs):
+    model = Pctrans(window_size=[3, 3, 3, None],
                       patch_size=4, embed_dims=[24, 48, 96, 192], num_heads=[2, 4, 6, 12],
                       mlp_ratios=[8, 8, 4, 4], qkv_bias=True,
                       norm_layer=partial(nn.LayerNorm, eps=1e-6), depths=[2, 2, 15, 2], sr_ratios=[8, 4, 2, 1],head_type='fan',
@@ -581,8 +581,8 @@ def transnext_z_fan(pretrained=False, **kwargs):
     return model
 
 @register_model
-def transnext_z_fan_sp(pretrained=False, **kwargs):
-    model = TransNeXt(window_size=[3, 3, 3, None],
+def Pctrans_z_fan_sp(pretrained=False, **kwargs):
+    model = Pctrans(window_size=[3, 3, 3, None],
                       patch_size=4, embed_dims=[24, 48, 96, 192], num_heads=[2, 4, 6, 12],
                       mlp_ratios=[8, 8, 4, 4], qkv_bias=True,
                       norm_layer=partial(nn.LayerNorm, eps=1e-6), depths=[2, 2, 15, 2], sr_ratios=[8, 4, 2, 1],head_type='fan',glu_type='sp',
@@ -592,8 +592,8 @@ def transnext_z_fan_sp(pretrained=False, **kwargs):
     return model
     
 @register_model
-def transnext_x(pretrained=False, **kwargs):
-    model = TransNeXt(window_size=[3, 3, 3, None],
+def Pctrans_x(pretrained=False, **kwargs):
+    model = Pctrans(window_size=[3, 3, 3, None],
                       patch_size=4, embed_dims=[24, 48, 96, 192], num_heads=[2, 4, 8, 16],
                       mlp_ratios=[8, 8, 4, 4], qkv_bias=True,
                       norm_layer=partial(nn.LayerNorm, eps=1e-6), depths=[2, 2, 15, 2], sr_ratios=[8, 4, 2, 1],
@@ -603,8 +603,8 @@ def transnext_x(pretrained=False, **kwargs):
     return model
 
 @register_model
-def transnext_x_sp(pretrained=False, **kwargs):
-    model = TransNeXt(window_size=[3, 3, 3, None],
+def Pctrans_x_sp(pretrained=False, **kwargs):
+    model = Pctrans(window_size=[3, 3, 3, None],
                       patch_size=4, embed_dims=[24, 48, 96, 192], num_heads=[2, 4, 8, 16],
                       mlp_ratios=[8, 8, 4, 4], qkv_bias=True,
                       norm_layer=partial(nn.LayerNorm, eps=1e-6), depths=[2, 2, 15, 2], sr_ratios=[8, 4, 2, 1],glu_type='sp',
@@ -614,8 +614,8 @@ def transnext_x_sp(pretrained=False, **kwargs):
     return model
     
 @register_model
-def transnext_x_kan(pretrained=False, **kwargs):
-    model = TransNeXt(window_size=[3, 3, 3, None],
+def Pctrans_x_kan(pretrained=False, **kwargs):
+    model = Pctrans(window_size=[3, 3, 3, None],
                       patch_size=4, embed_dims=[24, 48, 96, 192], num_heads=[2, 4, 8, 16],
                       mlp_ratios=[8, 8, 4, 4], qkv_bias=True,
                       norm_layer=partial(nn.LayerNorm, eps=1e-6), depths=[2, 2, 15, 2], sr_ratios=[8, 4, 2, 1],head_type='kan',
@@ -625,8 +625,8 @@ def transnext_x_kan(pretrained=False, **kwargs):
     return model
 
 @register_model
-def transnext_x_kan_sp(pretrained=False, **kwargs):
-    model = TransNeXt(window_size=[3, 3, 3, None],
+def Pctrans_x_kan_sp(pretrained=False, **kwargs):
+    model = Pctrans(window_size=[3, 3, 3, None],
                       patch_size=4, embed_dims=[24, 48, 96, 192], num_heads=[2, 4, 8, 16],
                       mlp_ratios=[8, 8, 4, 4], qkv_bias=True,
                       norm_layer=partial(nn.LayerNorm, eps=1e-6), depths=[2, 2, 15, 2], sr_ratios=[8, 4, 2, 1],head_type='kan',glu_type='sp',
@@ -636,8 +636,8 @@ def transnext_x_kan_sp(pretrained=False, **kwargs):
     return model
     
 @register_model
-def transnext_x_fan(pretrained=False, **kwargs):
-    model = TransNeXt(window_size=[3, 3, 3, None],
+def Pctrans_x_fan(pretrained=False, **kwargs):
+    model = Pctrans(window_size=[3, 3, 3, None],
                       patch_size=4, embed_dims=[24, 48, 96, 192], num_heads=[2, 4, 8, 16],
                       mlp_ratios=[8, 8, 4, 4], qkv_bias=True,
                       norm_layer=partial(nn.LayerNorm, eps=1e-6), depths=[2, 2, 15, 2], sr_ratios=[8, 4, 2, 1],head_type='fan',
@@ -647,8 +647,8 @@ def transnext_x_fan(pretrained=False, **kwargs):
     return model
 
 @register_model
-def transnext_x_fan_sp(pretrained=False, **kwargs):
-    model = TransNeXt(window_size=[3, 3, 3, None],
+def Pctrans_x_fan_sp(pretrained=False, **kwargs):
+    model = Pctrans(window_size=[3, 3, 3, None],
                       patch_size=4, embed_dims=[24, 48, 96, 192], num_heads=[2, 4, 8, 16],
                       mlp_ratios=[8, 8, 4, 4], qkv_bias=True,
                       norm_layer=partial(nn.LayerNorm, eps=1e-6), depths=[2, 2, 15, 2], sr_ratios=[8, 4, 2, 1],head_type='fan',glu_type='sp',
@@ -658,8 +658,8 @@ def transnext_x_fan_sp(pretrained=False, **kwargs):
     return model
     
 @register_model
-def transnext_micro(pretrained=False, **kwargs):
-    model = TransNeXt(window_size=[3, 3, 3, None],
+def Pctrans_micro(pretrained=False, **kwargs):
+    model = Pctrans(window_size=[3, 3, 3, None],
                       patch_size=4, embed_dims=[48, 96, 192, 384], num_heads=[2, 4, 8, 16],
                       mlp_ratios=[8, 8, 4, 4], qkv_bias=True,
                       norm_layer=partial(nn.LayerNorm, eps=1e-6), depths=[2, 2, 15, 2], sr_ratios=[8, 4, 2, 1],
@@ -669,8 +669,8 @@ def transnext_micro(pretrained=False, **kwargs):
     return model
 
 @register_model
-def transnext_micro_kan(pretrained=False, **kwargs):
-    model = TransNeXt(window_size=[3, 3, 3, None],
+def Pctrans_micro_kan(pretrained=False, **kwargs):
+    model = Pctrans(window_size=[3, 3, 3, None],
                       patch_size=4, embed_dims=[48, 96, 192, 384], num_heads=[2, 4, 8, 16],
                       mlp_ratios=[8, 8, 4, 4], qkv_bias=True,
                       norm_layer=partial(nn.LayerNorm, eps=1e-6), depths=[2, 2, 15, 2], sr_ratios=[8, 4, 2, 1],head_type='kan',
@@ -680,8 +680,8 @@ def transnext_micro_kan(pretrained=False, **kwargs):
     return model
 
 @register_model
-def transnext_micro_fan(pretrained=False, **kwargs):
-    model = TransNeXt(window_size=[3, 3, 3, None],
+def Pctrans_micro_fan(pretrained=False, **kwargs):
+    model = Pctrans(window_size=[3, 3, 3, None],
                       patch_size=4, embed_dims=[48, 96, 192, 384], num_heads=[2, 4, 8, 16],
                       mlp_ratios=[8, 8, 4, 4], qkv_bias=True,
                       norm_layer=partial(nn.LayerNorm, eps=1e-6), depths=[2, 2, 15, 2], sr_ratios=[8, 4, 2, 1],head_type='fan',
@@ -691,8 +691,8 @@ def transnext_micro_fan(pretrained=False, **kwargs):
     return model
     
 @register_model
-def transnext_tiny(pretrained=False, **kwargs):
-    model = TransNeXt(window_size=[3, 3, 3, None],
+def Pctrans_tiny(pretrained=False, **kwargs):
+    model = Pctrans(window_size=[3, 3, 3, None],
                       patch_size=4, embed_dims=[72, 144, 288, 576], num_heads=[3, 6, 12, 24],
                       mlp_ratios=[8, 8, 4, 4], qkv_bias=True,
                       norm_layer=partial(nn.LayerNorm, eps=1e-6), depths=[2, 2, 15, 2], sr_ratios=[8, 4, 2, 1],
@@ -702,8 +702,8 @@ def transnext_tiny(pretrained=False, **kwargs):
     return model
 
 @register_model
-def transnext_tiny_kan(pretrained=False, **kwargs):
-    model = TransNeXt(window_size=[3, 3, 3, None],
+def Pctrans_tiny_kan(pretrained=False, **kwargs):
+    model = Pctrans(window_size=[3, 3, 3, None],
                       patch_size=4, embed_dims=[72, 144, 288, 576], num_heads=[3, 6, 12, 24],
                       mlp_ratios=[8, 8, 4, 4], qkv_bias=True,
                       norm_layer=partial(nn.LayerNorm, eps=1e-6), depths=[2, 2, 15, 2], sr_ratios=[8, 4, 2, 1],head_type='kan',
@@ -713,8 +713,8 @@ def transnext_tiny_kan(pretrained=False, **kwargs):
     return model
 
 @register_model
-def transnext_tiny_fan(pretrained=False, **kwargs):
-    model = TransNeXt(window_size=[3, 3, 3, None],
+def Pctrans_tiny_fan(pretrained=False, **kwargs):
+    model = Pctrans(window_size=[3, 3, 3, None],
                       patch_size=4, embed_dims=[72, 144, 288, 576], num_heads=[3, 6, 12, 24],
                       mlp_ratios=[8, 8, 4, 4], qkv_bias=True,
                       norm_layer=partial(nn.LayerNorm, eps=1e-6), depths=[2, 2, 15, 2], sr_ratios=[8, 4, 2, 1],head_type='fan',
@@ -723,37 +723,3 @@ def transnext_tiny_fan(pretrained=False, **kwargs):
 
     return model
     
-@register_model
-def transnext_small(pretrained=False, **kwargs):
-    model = TransNeXt(window_size=[3, 3, 3, None],
-                      patch_size=4, embed_dims=[72, 144, 288, 576], num_heads=[3, 6, 12, 24],
-                      mlp_ratios=[8, 8, 4, 4], qkv_bias=True,
-                      norm_layer=partial(nn.LayerNorm, eps=1e-6), depths=[5, 5, 22, 5], sr_ratios=[8, 4, 2, 1],
-                      **kwargs)
-    model.default_cfg = _cfg()
-
-    return model
-
-
-@register_model
-def transnext_base(pretrained=False, **kwargs):
-    model = TransNeXt(window_size=[3, 3, 3, None],
-                      patch_size=4, embed_dims=[96, 192, 384, 768], num_heads=[4, 8, 16, 32],
-                      mlp_ratios=[8, 8, 4, 4], qkv_bias=True,
-                      norm_layer=partial(nn.LayerNorm, eps=1e-6), depths=[5, 5, 23, 5], sr_ratios=[8, 4, 2, 1],
-                      **kwargs)
-    model.default_cfg = _cfg()
-
-    return model
-
-
-@register_model
-def transnext_micro_AAAA(pretrained=False, **kwargs):
-    model = TransNeXt(window_size=[3, 3, 3, 3],
-                      patch_size=4, embed_dims=[48, 96, 192, 384], num_heads=[2, 4, 8, 16],
-                      mlp_ratios=[8, 8, 4, 4], qkv_bias=True,
-                      norm_layer=partial(nn.LayerNorm, eps=1e-6), depths=[2, 2, 15, 2], sr_ratios=[16, 8, 4, 2],
-                      **kwargs)
-    model.default_cfg = _cfg()
-
-    return model
